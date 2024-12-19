@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>범인 찾기 게임 예제</title>
+<style>
+    body {
+        margin: 0;
+        font-family: sans-serif;
+        background: #f5f5f5;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        justify-content: space-between;
+        align-items: center;
+    }
+    header, footer {
+        width: 100%;
+        text-align: center;
+        padding: 10px;
+        background: #333;
+        color: #fff;
+    }
+    main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+    .tiles {
+        display: flex;
+        gap: 10px;
+    }
+    .tile {
+        width: 60px;
+        height: 80px;
+        background: #fff;
+        border: 2px solid #000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        font-weight: bold;
+        border-radius: 8px;
+    }
+    /* 숫자별 다른 색상 예시 */
+    .tile:nth-child(1) {color: red;}
+    .tile:nth-child(2) {color: blue;}
+    .tile:nth-child(3) {color: green;}
+    .tile:nth-child(4) {color: purple;}
+    .tile:nth-child(5) {color: orange;}
+    .tile:nth-child(6) {color: brown;}
+
+    .dice-area {
+        margin-top: 30px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .dice-btn {
+        background: #333;
+        color: #fff;
+        padding: 10px 20px;
+        border:none;
+        border-radius: 5px;
+        font-size: 1rem;
+        cursor: pointer;
+        margin-bottom: 10px;
+    }
+
+    .dialog-box {
+        position: fixed;
+        bottom: 100px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #fff;
+        border: 2px solid #333;
+        padding: 20px;
+        width: 300px;
+        text-align: center;
+        box-shadow: 0 0 10px rgba(0,0,0,0.3);
+        display: none;
+    }
+
+    .dialog-box p {
+        margin: 10px 0;
+    }
+
+    .dialog-box button {
+        margin: 5px;
+        padding: 5px 10px;
+        border: none;
+        background: #333;
+        color: #fff;
+        cursor: pointer;
+        border-radius: 5px;
+    }
+</style>
+</head>
+<body>
+<header>
+    <h1>범인 찾기 게임 예제</h1>
+</header>
+<main>
+    <div class="tiles">
+        <div class="tile" data-num="1">1</div>
+        <div class="tile" data-num="2">2</div>
+        <div class="tile" data-num="3">3</div>
+        <div class="tile" data-num="4">4</div>
+        <div class="tile" data-num="5">5</div>
+        <div class="tile" data-num="6">6</div>
+    </div>
+    <div class="dice-area">
+        <button class="dice-btn" id="rollDiceBtn">주사위 굴리기</button>
+        <div>남은 주사위: <span id="diceCount">6</span>개</div>
+    </div>
+</main>
+<footer>
+    <p>만든이: 예시</p>
+</footer>
+
+<div class="dialog-box" id="dialogBox">
+    <p id="dialogText"></p>
+    <div id="dialogButtons">
+        <!-- 대사 확인 후 나타나는 버튼들 -->
+    </div>
+</div>
+
+<script>
+// 6명 각각 대사 6개씩 (마지막이 범인 대사라고 가정)
+const dialogues = [
+  ["(1) 저는 그 시간에 밥을 먹었어요.", "(1) 나는 그 사람을 본 적 없어요.", "(1) 그날은 조용히 책읽고 있었어요.", "(1) 난 전혀 몰라요.", "(1) 난 사건현장과 거리가 멀었어요.", "(1) 그래요. 그냥 내가 범인이라고 칩시다."],
+  ["(2) 저는 그 시간에 밥을 먹었어요.", "(2) 아니 나는 그 새끼를 본 적도 없다구요!", "(2) 그날 싸운 건 맞지만 바로 헤어졌어요.", "(2) 내가 범인이면 너부터 죽였어.", "(2) 왜 사건을 자꾸 키워요!", "(2) 그래요. 그냥 내가 범인이라고 칩시다."],
+  ["(3) 저는 그 시간에 밥을 먹었어요.", "(3) 나는 그 사람을 본 적 없어요.", "(3) 그날 싸운 건 맞지만 바로 헤어졌어요.", "(3) 내가 범인이면 너부터 죽였어.", "(3) 왜 사건을 자꾸 키워요!", "(3) 그래요. 그냥 내가 범인이라고 칩시다."],
+  ["(4) 저는 그 시간에 밥을 먹었어요.", "(4) 나는 그 사람을 본 적 없어요.", "(4) 그날 싸운 건 맞지만 바로 헤어졌어요.", "(4) 내가 범인이면 너부터 죽였어.", "(4) 왜 사건을 자꾸 키워요!", "(4) 그래요. 그냥 내가 범인이라고 칩시다."],
+  ["(5) 저는 그 시간에 밥을 먹었어요.", "(5) 나는 그 사람을 본 적 없어요.", "(5) 그날 싸운 건 맞지만 바로 헤어졌어요.", "(5) 내가 범인이면 너부터 죽였어.", "(5) 왜 사건을 자꾸 키워요!", "(5) 그래요. 그냥 내가 범인이라고 칩시다."],
+  ["(6) 저는 그 시간에 밥을 먹었어요.", "(6) 나는 그 사람을 본 적 없어요.", "(6) 그날 싸운 건 맞지만 바로 헤어졌어요.", "(6) 내가 범인이면 너부터 죽였어.", "(6) 왜 사건을 자꾸 키워요!", "(6) 그래요. 그냥 내가 범인이라고 칩시다."]
+];
+
+let chosenDialogues = []; // 각 인물이 선택한 대사
+let culpritIndex = null; // 범인 인물 인덱스 (0~5)
+let diceCount = 6;
+
+// 게임 초기화 함수
+function initGame() {
+    diceCount = 6;
+    document.getElementById('diceCount').innerText = diceCount;
+    // 6명 중 한 명을 범인으로 지정
+    culpritIndex = Math.floor(Math.random() * 6);
+    chosenDialogues = [];
+    for (let i=0; i<6; i++) {
+        let candidateDialogues = dialogues[i].slice();
+        // 범인인 경우: 반드시 마지막 대사(범인 대사) 중 선택
+        // 범인 아닌 경우: 마지막 대사 빼고 5개 중 하나 랜덤 선택
+        if (i === culpritIndex) {
+            chosenDialogues.push(candidateDialogues[5]); // 범인 대사
+        } else {
+            let rand = Math.floor(Math.random()*5);
+            chosenDialogues.push(candidateDialogues[rand]);
+        }
+    }
+}
+
+// 주사위 굴리는 함수
+function rollDice() {
+    if (diceCount <= 0) {
+        alert("남은 주사위가 없습니다. 다음 판으로 넘어갑니다.");
+        initGame();
+        return;
+    }
+    diceCount--;
+    document.getElementById('diceCount').innerText = diceCount;
+
+    // 1~6 랜덤
+    let result = Math.floor(Math.random() * 6) + 1;
+    showDialogue(result);
+}
+
+// 대사 보여주는 함수
+function showDialogue(num) {
+    let index = num - 1;
+    let dialogText = chosenDialogues[index];
+    const dialogBox = document.getElementById('dialogBox');
+    const dialogTextEl = document.getElementById('dialogText');
+    const dialogButtons = document.getElementById('dialogButtons');
+
+    dialogTextEl.innerText = dialogText;
+    dialogButtons.innerHTML = "";
+
+    // 범인 지목/취소 버튼 추가
+    let accuseBtn = document.createElement('button');
+    accuseBtn.innerText = "이 사람이 범인!";
+    accuseBtn.onclick = function() {
+        checkCulprit(index);
+    };
+
+    let closeBtn = document.createElement('button');
+    closeBtn.innerText = "지목 안함";
+    closeBtn.onclick = function() {
+        dialogBox.style.display = 'none';
+    };
+
+    dialogButtons.appendChild(accuseBtn);
+    dialogButtons.appendChild(closeBtn);
+
+    dialogBox.style.display = 'block';
+}
+
+// 범인 확인
+function checkCulprit(index) {
+    const dialogBox = document.getElementById('dialogBox');
+    if (index === culpritIndex) {
+        alert("정답! 범인을 찾았습니다.");
+    } else {
+        alert("틀렸습니다! 범인이 아닙니다.");
+    }
+    dialogBox.style.display = 'none';
+    // 판 종료 후 재시작
+    initGame();
+}
+
+
+// 초기화
+initGame();
+
+// 이벤트 리스너 등록
+document.getElementById('rollDiceBtn').addEventListener('click', rollDice);
+</script>
+</body>
+</html>
